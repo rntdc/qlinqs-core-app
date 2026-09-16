@@ -209,7 +209,7 @@ computed per block index from the actual payload, not one static rule.
 | `blocks.*.id`                | `required\|string`                                                                                                                                                                         |
 | `blocks.*.kind`              | `required`, enum `["atomic","container"]` — anything else is rejected                                                                                                                      |
 | `blocks.*.type`              | `required`. Enum `["link","whatsapp","maps","text","heading"]` when `kind === "atomic"`; enum `["carousel","grid"]` when `kind === "container"`.                                          |
-| `blocks.*.layout`            | **Atomic only.** `required`. Enum `["button","thumbnail","featured"]` only when `type === "link"`; any non-empty string for every other atomic type. **Not validated for containers** — they have no `layout` concept. |
+| `blocks.*.layout`            | **Atomic only.** `required`. Enum `["button","thumbnail","background","featured"]` only when `type === "link"`; any non-empty string for every other atomic type. **Not validated for containers** — they have no `layout` concept. `"background"` is a link layout where the image fills the whole button as a background with the title overlaid — our naming, not in the conceptual doc. |
 | `blocks.*.hidden`            | **Atomic:** `required\|boolean`. **Container:** `nullable\|boolean` (optional).                                                                                                            |
 | `blocks.*.card`              | **Atomic only.** `present\|array` (key must exist, **can be an empty object**). Containers use `config`/`items` instead.                                                                  |
 | `blocks.*.card.title`        | `nullable\|string`                                                                                                                                                                         |
@@ -222,7 +222,7 @@ computed per block index from the actual payload, not one static rule.
 | `blocks.*.card.image`        | `nullable\|array`                                                                                                                                                                          |
 | `blocks.*.card.image.source` | required **only if `card.image` is present**, enum `["upload","icon","emoji"]`                                                                                                             |
 | `blocks.*.card.image.value`  | required **only if `card.image` is present**, string                                                                                                                                       |
-| `blocks.*.card.overrides`    | `nullable\|array` — shape is `StyleOverrideRules` below, `align`/`size` **allowed** here                                                                                                   |
+| `blocks.*.card.overrides`    | `nullable\|array` — shape is `StyleOverrideRules` below, `align`/`size`/`imagePosition` **allowed** here                                                                                   |
 | `blocks.*.config`            | **Container only.** `required\|array`.                                                                                                                                                     |
 | `blocks.*.config.size`       | **Container, `type === "carousel"` only.** `required`, enum `["large","small"]`. `prohibited` on a grid.                                                                                   |
 | `blocks.*.config.columns`    | **Container, `type === "grid"` only.** `required`, enum `[2,3]`. `prohibited` on a carousel.                                                                                               |
@@ -235,7 +235,7 @@ computed per block index from the actual payload, not one static rule.
 | `blocks.*.items.*.image`     | **`required\|array`** — unlike an atomic card, image is mandatory on every container item (§5.2: "imagem obrigatória em todo card de container")                                          |
 | `blocks.*.items.*.image.source` | **`required`** (not conditional), enum `["upload","icon","emoji"]`                                                                                                                      |
 | `blocks.*.items.*.image.value`  | **`required`** (not conditional), string                                                                                                                                                |
-| `blocks.*.items.*.overrides` | `nullable\|array` — same `StyleOverrideRules` shape as `card.overrides`, `align`/`size` allowed                                                                                            |
+| `blocks.*.items.*.overrides` | `nullable\|array` — same `StyleOverrideRules` shape as `card.overrides`, `align`/`size`/`imagePosition` allowed                                                                             |
 | `blocks.*.items.*.kind`      | **`prohibited`** — an item is a card, not a block; sending `kind` is a 422                                                                                                                 |
 | `blocks.*.items.*.type`      | **`prohibited`** — same reasoning; containers never contain containers                                                                                                                     |
 | `blocks.*.items.*.items`     | **`prohibited`** — same reasoning                                                                                                                                                          |
@@ -250,7 +250,7 @@ computed per block index from the actual payload, not one static rule.
 | `page.background`                                                                    | `required\|array`                                                                                                                              |
 | `page.background.type`                                                               | `required`, enum `["none","solid","gradient"]` — **this key name (`type`) is our own choice; the conceptual doc doesn't name a discriminator** |
 | `page.profilePicture`                                                                | `present\|array` (key must exist, **can be an empty object** — no sub-fields are validated at all)                                             |
-| `blockDefaults`                                                                      | `present\|array` (key must exist, **can be an empty object**) — shape is `StyleOverrideRules` below, `align`/`size` **prohibited** here        |
+| `blockDefaults`                                                                      | `present\|array` (key must exist, **can be an empty object**) — shape is `StyleOverrideRules` below, `align`/`size`/`imagePosition` **prohibited** here |
 | `fonts`                                                                              | `present\|array` (key must exist, **can be an empty object**)                                                                                  |
 | `fonts.titleFont`                                                                    | `nullable\|string`                                                                                                                             |
 | `fonts.textFont`                                                                     | `nullable\|string`                                                                                                                             |
@@ -272,6 +272,7 @@ computed per block index from the actual payload, not one static rule.
 | `spacing`     | `nullable\|integer`, `0`–`100`                                                                                                     |
 | `align`       | on `card.overrides`: `nullable`, enum `["left","center","right"]`. On `blockDefaults`: **`prohibited`** (a 422 if present at all). |
 | `size`        | on `card.overrides`: `nullable`, enum `["large","small"]`. On `blockDefaults`: **`prohibited`**.                                   |
+| `imagePosition` | on `card.overrides`: `nullable`, enum `["left","right"]` (used by the link block's `thumbnail` layout to put the image on the left — default — or right). On `blockDefaults`: **`prohibited`**. |
 
 ### Plain-language summary
 
@@ -298,8 +299,10 @@ computed per block index from the actual payload, not one static rule.
   leaves that must be set; `page.profilePicture`, `blockDefaults`, and
   `fonts` just need to exist as objects (can be `{}`). `palette` is the one
   part of `theme` that's fully required — all 6 roles, every time.
-- `align`/`size` are block-only: allowed inside a block's `card.overrides`,
-  **rejected with a 422** inside `theme.blockDefaults`.
+- `align`/`size`/`imagePosition` are block-only: allowed inside a block's
+  `card.overrides`, **rejected with a 422** inside `theme.blockDefaults`.
+  `imagePosition` (`left`/`right`) is used by the link block's `thumbnail`
+  layout — our own addition, not in the conceptual doc.
 - Colors (`color`, `textColor`, `borderColor`, every `palette.*` value) are
   validated as plain strings only — no hex format enforced, matching the
   "open item" status in the conceptual doc (§9.6).
@@ -535,10 +538,11 @@ none of these were changed, per the task boundary:
    and a live `curl`) **never includes `created_at`** — Scramble appears to
    have introspected the Eloquent model's full DB columns instead of the
    controller's restricted column selection.
-3. **`blockDefaults.align`/`.size` are documented as plain unconstrained
-   strings.** Scramble doesn't understand the `prohibited` rule, so its spec
-   makes it look like sending `align`/`size` inside `blockDefaults` is valid
-   — in reality it's a guaranteed 422. A consumer reading only the Scramble
+3. **`blockDefaults.align`/`.size`/`.imagePosition` are documented as plain
+   unconstrained strings.** Scramble doesn't understand the `prohibited` rule,
+   so its spec makes it look like sending `align`/`size`/`imagePosition`
+   inside `blockDefaults` is valid — in reality it's a guaranteed 422
+   (confirmed live for all three). A consumer reading only the Scramble
    docs would get this wrong.
 4. **`page.profilePicture` is documented as `string[]`** (`{"type":"array","items":{"type":"string"}}`).
    In reality it's `present|array` with **no** sub-field rules at all — an
@@ -587,6 +591,18 @@ Concrete, so the frontend builds against what's real:
   describes the background kind (`none`/`solid`/`gradient`) but doesn't name
   a JSON key for it. The implementation chose `type` as that discriminator
   key. Build against `type`.
+- **Naming choice: `link` block layout `"background"`, and the
+  `imagePosition` override field.** Neither exists in the conceptual doc.
+  Renato reorganized the `link` block from 3 layouts to 4
+  (`button`/`thumbnail`/`background`/`featured` — §5.1 of the conceptual doc
+  only documents the first 3); `"background"` means the image fills the
+  whole button as a background with the title overlaid on top. Separately,
+  a new block-only style field `imagePosition` (`"left"`/`"right"`, default
+  `"left"`) was added to `overrides`/`blockDefaults` — same conditionality as
+  `align`/`size` (§5.3: allowed on a card's `overrides`, `prohibited` on
+  `theme.blockDefaults`) — used by the `thumbnail` layout to pick which side
+  the image sits on. The API does **not** require `image` on `background` or
+  `thumbnail` layouts — that's editor UX, not an API-level rule.
 - **Container blocks are now accepted — no longer post-v1.** Renato approved
   containers, so `blocks.*.kind` accepts `"atomic"` and `"container"`, and
   `type` accepts `carousel`/`grid` for containers, exactly per §5.2 of the
@@ -656,8 +672,8 @@ type SocialIcon = { platform: string; value: string };
 type CardLink = { kind: "url" | "email"; href: string };
 type CardImage = { source: "upload" | "icon" | "emoji"; value: string };
 
-// Shared by card.overrides and theme.blockDefaults — align/size are
-// allowed in the former, REJECTED (422) in the latter.
+// Shared by card.overrides and theme.blockDefaults — align/size/
+// imagePosition are allowed in the former, REJECTED (422) in the latter.
 type StyleOverrides = {
   tactile?: "flat" | "concave" | "convex" | "inset" | "glass" | "none";
   color?: string;
@@ -673,7 +689,14 @@ type StyleOverrides = {
 type CardOverrides = StyleOverrides & {
   align?: "left" | "center" | "right"; // block-only; allowed here
   size?: "large" | "small"; // block-only; allowed here
+  imagePosition?: "left" | "right"; // block-only; allowed here — used by the link block's "thumbnail" layout; our own addition, not in the conceptual doc
 };
+
+// Only "button" | "thumbnail" | "background" | "featured" are enum-enforced,
+// and only when a block's type === "link". Every other atomic type just
+// needs a non-empty string (see the frontend note below). "background" is
+// our own layout (image fills the button as a background, title overlaid).
+type LinkLayout = "button" | "thumbnail" | "background" | "featured";
 
 type Card = {
   title?: string;
@@ -695,8 +718,9 @@ type AtomicBlock = {
   id: string;
   kind: "atomic";
   type: "link" | "whatsapp" | "maps" | "text" | "heading";
-  // Enum-enforced ONLY when type === "link"; any non-empty string otherwise.
-  layout: "button" | "thumbnail" | "featured" | (string & {});
+  // LinkLayout is enum-enforced ONLY when type === "link"; any non-empty
+  // string otherwise.
+  layout: LinkLayout | (string & {});
   hidden: boolean;
   card: Card; // may be {}
 };
