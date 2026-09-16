@@ -8,6 +8,7 @@ import {
   duplicateCard,
   type BlockPreset,
 } from "@/lib/editor/presets";
+import { BlockPicker } from "@/components/editor/BlockPicker";
 import { Canvas } from "@/components/editor/Canvas";
 import { ContainerConfigPanel } from "@/components/editor/ContainerConfigPanel";
 import { EditPanel } from "@/components/editor/EditPanel";
@@ -141,15 +142,36 @@ export default function EditorPage() {
     }));
   }
 
+  // "Edit screen" = any of the three PanelShell-based panels is open
+  // (atomic block, container config, or a container item) — they all share
+  // the same full-height shell (point 4), so the header hides uniformly for
+  // all three rather than special-casing container config differently.
+  const isEditing = selection !== null;
+
   return (
     <div className="min-h-screen bg-zinc-100">
-      <header className="border-b border-zinc-200 bg-white px-6 py-4">
-        <p className="text-xs font-medium text-indigo-600">Qlinqs</p>
-        <h1 className="text-lg font-semibold text-zinc-900">Editar página</h1>
-      </header>
+      {!isEditing ? (
+        <header className="flex items-center gap-2 border-b border-zinc-200 bg-white px-4 py-2">
+          <span className="text-xs font-medium text-indigo-600">Qlinqs</span>
+          <span className="text-zinc-300" aria-hidden="true">
+            /
+          </span>
+          <h1 className="text-sm font-semibold text-zinc-900">Editar página</h1>
+        </header>
+      ) : null}
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-start">
-        <div className="order-2 min-w-0 flex-1 lg:order-1">
+      <main
+        className={`mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-start ${
+          isEditing ? "lg:pr-[360px]" : ""
+        }`}
+      >
+        <BlockPicker
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          onAddPreset={addBlock}
+        />
+
+        <div className="order-2 min-w-0 flex-1 lg:order-1 lg:min-w-[280px]">
           <Canvas
             blocks={blocks}
             selectedBlockId={selection?.blockId ?? null}
@@ -161,12 +183,10 @@ export default function EditorPage() {
             onDelete={handleDelete}
             onDuplicate={handleDuplicate}
             onReorder={setBlocks}
-            onAddPreset={addBlock}
             onAddItem={handleAddItem}
             onDuplicateItem={handleDuplicateItem}
             onDeleteItem={handleDeleteItem}
             onReorderItems={handleReorderItems}
-            pickerOpen={pickerOpen}
             onPickerOpenChange={setPickerOpen}
           />
         </div>

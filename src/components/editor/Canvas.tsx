@@ -16,8 +16,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import type { Block, Card } from "@/lib/types";
-import type { BlockPreset } from "@/lib/editor/presets";
-import { AddBlockMenu } from "./AddBlockMenu";
 import { BlockRow } from "./BlockRow";
 import { ContainerRow } from "./ContainerRow";
 
@@ -30,12 +28,10 @@ export function Canvas({
   onDelete,
   onDuplicate,
   onReorder,
-  onAddPreset,
   onAddItem,
   onDuplicateItem,
   onDeleteItem,
   onReorderItems,
-  pickerOpen,
   onPickerOpenChange,
 }: {
   blocks: Block[];
@@ -46,12 +42,10 @@ export function Canvas({
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onReorder: (blocks: Block[]) => void;
-  onAddPreset: (preset: BlockPreset) => void;
   onAddItem: (blockId: string) => void;
   onDuplicateItem: (blockId: string, itemId: string) => void;
   onDeleteItem: (blockId: string, itemId: string) => void;
   onReorderItems: (blockId: string, items: Card[]) => void;
-  pickerOpen: boolean;
   onPickerOpenChange: (open: boolean) => void;
 }) {
   // KeyboardSensor + sortableKeyboardCoordinates makes reordering possible
@@ -80,18 +74,11 @@ export function Canvas({
       data-testid="canvas"
       className="flex min-h-[400px] flex-col rounded-2xl border border-zinc-200 bg-white"
     >
-      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-900">Blocos</h2>
-          <p className="text-xs text-zinc-500">
-            {blocks.length} {blocks.length === 1 ? "bloco" : "blocos"}
-          </p>
-        </div>
-        <AddBlockMenu
-          open={pickerOpen}
-          onOpenChange={onPickerOpenChange}
-          onAddPreset={onAddPreset}
-        />
+      <div className="border-b border-zinc-200 px-4 py-3">
+        <h2 className="text-sm font-semibold text-zinc-900">Blocos</h2>
+        <p className="text-xs text-zinc-500">
+          {blocks.length} {blocks.length === 1 ? "bloco" : "blocos"}
+        </p>
       </div>
 
       {blocks.length === 0 ? (
