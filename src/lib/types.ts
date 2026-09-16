@@ -24,6 +24,8 @@ export type Tactile =
 export type ShadowStyle = "soft" | "solid";
 export type Align = "left" | "center" | "right";
 export type Size = "large" | "small";
+/** Which side the `thumbnail` link layout's image sits on. Unset means "left". */
+export type ImagePosition = "left" | "right";
 
 /**
  * Shared by `card.overrides` and `theme.blockDefaults`. `align`/`size` are
@@ -45,6 +47,8 @@ export interface StyleOverrides {
 export interface CardOverrides extends StyleOverrides {
   align?: Align;
   size?: Size;
+  /** Block-only, like align/size — rejected (422) inside theme.blockDefaults. */
+  imagePosition?: ImagePosition;
 }
 
 export interface Card {
@@ -67,7 +71,12 @@ export interface Card {
 }
 
 export type BlockType = "link" | "whatsapp" | "maps" | "text" | "heading";
-export type LinkLayout = "button" | "thumbnail" | "featured";
+/**
+ * "background" is this codebase's own naming (API-MAPPING §4, not in the
+ * conceptual doc) — the image fills the whole button as a background with
+ * the title overlaid.
+ */
+export type LinkLayout = "button" | "thumbnail" | "background" | "featured";
 
 export interface AtomicBlock {
   id: string;

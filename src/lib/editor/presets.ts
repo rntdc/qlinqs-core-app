@@ -64,21 +64,37 @@ export const blockPresets: BlockPreset[] = [
     }),
   },
   {
+    id: "link-background",
+    label: "Link (Image Background)",
+    hint: "Imagem preenche o botão, título por cima",
+    create: () => ({
+      id: newId(),
+      kind: "atomic",
+      type: "link",
+      layout: "background",
+      hidden: false,
+      card: {
+        title: "Novo link",
+        image: { source: "emoji", value: "🌄" },
+        link: { kind: "url", href: "https://" },
+      },
+    }),
+  },
+  {
     id: "link-featured",
     label: "Link (Featured)",
-    hint: "Card grande com botão em destaque",
+    hint: "Cresce conforme você preenche os campos",
     create: () => ({
       id: newId(),
       kind: "atomic",
       type: "link",
       layout: "featured",
       hidden: false,
+      // Starts with JUST an image on purpose — title/description/buttonText/
+      // link each reveal in the preview only once filled in (progressive
+      // card), instead of showing empty placeholders.
       card: {
-        title: "Link em destaque",
-        description: "Descrição curta",
-        buttonText: "Saiba mais",
         image: { source: "emoji", value: "⭐" },
-        link: { kind: "url", href: "https://" },
       },
     }),
   },
@@ -212,6 +228,8 @@ export function describeBlock(block: Block): string {
       return "Link (Button)";
     case "link:thumbnail":
       return "Link (Thumbnail)";
+    case "link:background":
+      return "Link (Image Background)";
     case "link:featured":
       return "Link (Featured)";
     case "whatsapp:whatsapp":

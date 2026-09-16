@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { BlockDefaults, CardOverrides, Palette } from "@/lib/types";
 import {
   ALIGN_OPTIONS,
+  IMAGE_POSITION_OPTIONS,
   SHADOW_STYLE_OPTIONS,
   SIZE_OPTIONS,
   TACTILE_OPTIONS,
@@ -62,6 +63,7 @@ export function OverridesPanel({
   hideColor,
   showAlign,
   showSize,
+  showImagePosition,
   onChangeOverride,
 }: {
   overrides: CardOverrides | undefined;
@@ -70,6 +72,7 @@ export function OverridesPanel({
   hideColor: boolean;
   showAlign: boolean;
   showSize: boolean;
+  showImagePosition: boolean;
   onChangeOverride: (
     field: OverrideKey,
     value: CardOverrides[OverrideKey],
@@ -299,6 +302,34 @@ export function OverridesPanel({
                 onClick={() => onChangeOverride("size", opt.value)}
                 className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium ${
                   resolved.size === opt.value
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                    : "border-zinc-300 bg-white text-zinc-600"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </Field>
+      ) : null}
+
+      {showImagePosition ? (
+        <Field
+          label="Lado da imagem"
+          fieldKey="imagePosition"
+          isSet={isSet("imagePosition")}
+          onReset={() => reset("imagePosition")}
+        >
+          <div data-testid="override-imagePosition" className="flex gap-1">
+            {IMAGE_POSITION_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                data-testid={`override-imagePosition-${opt.value}`}
+                aria-pressed={resolved.imagePosition === opt.value}
+                onClick={() => onChangeOverride("imagePosition", opt.value)}
+                className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium ${
+                  resolved.imagePosition === opt.value
                     ? "border-indigo-600 bg-indigo-50 text-indigo-700"
                     : "border-zinc-300 bg-white text-zinc-600"
                 }`}

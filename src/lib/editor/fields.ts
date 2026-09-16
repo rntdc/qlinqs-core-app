@@ -4,16 +4,22 @@ export type CardFieldKey =
   "title" | "description" | "buttonText" | "label" | "link" | "image";
 
 /**
- * §5.1's layout × field matrix, plus the non-link types (which the matrix
- * doesn't cover — API-MAPPING §4 leaves their fields as an open point, so
- * this is this codebase's own convention: generic card fields that make
- * sense for what each type does).
+ * §5.1's layout × field matrix, extended with the "background" layout (this
+ * codebase's own addition — API-MAPPING §4), plus the non-link types (which
+ * the matrix doesn't cover — a real open point, so this is this codebase's
+ * own convention: generic card fields that make sense for what each type
+ * does).
  */
 export function cardFieldsFor(type: BlockType, layout: string): CardFieldKey[] {
   if (type === "link") {
     switch (layout as LinkLayout) {
       case "thumbnail":
         return ["image", "title", "description", "label", "link"];
+      case "background":
+        // Deliberately minimal: the image is the whole button and the
+        // title overlays it — description/label/buttonText would clutter
+        // a legibility-constrained overlay, so they're left out.
+        return ["image", "title", "link"];
       case "featured":
         return ["image", "title", "description", "buttonText", "label", "link"];
       case "button":
@@ -28,20 +34,28 @@ export function cardFieldsFor(type: BlockType, layout: string): CardFieldKey[] {
   return ["title"];
 }
 
-/** §5.1: align/size are only offered where the layout actually has that control. */
+/** §5.1: align/size/imagePosition are only offered where the layout has that control. */
 export function styleControlsFor(
   type: BlockType,
   layout: string,
-): { align: boolean; size: boolean } {
-  if (type !== "link") return { align: false, size: false };
-  if (layout === "button") return { align: true, size: false };
-  if (layout === "thumbnail") return { align: true, size: true };
-  return { align: false, size: false }; // featured: no own control
+): { align: boolean; size: boolean; imagePosition: boolean } {
+  if (type !== "link")
+    return { align: false, size: false, imagePosition: false };
+  if (layout === "button")
+    return { align: true, size: false, imagePosition: false };
+  if (layout === "thumbnail")
+    return { align: true, size: true, imagePosition: true };
+  // background, featured: no own control
+  return { align: false, size: false, imagePosition: false };
 }
 
-/** §5.3: image-dominant layouts hide color/textColor. Only "featured" qualifies here. */
+/**
+ * §5.3: image-dominant layouts hide color/textColor. "featured" (per the
+ * conceptual doc) and this codebase's own "background" layout both qualify
+ * — a background image makes a custom card/text color moot either way.
+ */
 export function hidesColorOverrides(type: BlockType, layout: string): boolean {
-  return type === "link" && layout === "featured";
+  return type === "link" && (layout === "featured" || layout === "background");
 }
 
 /**
@@ -67,4 +81,9 @@ export const CONTAINER_ITEM_HIDES_COLOR = true;
 /** §5.2: "imagem obrigatória em todo card de container." */
 export function hasRequiredImage(card: Card): boolean {
   return Boolean(card.image?.value?.trim());
+}
+
+/** An empty string counts as "not filled" — used by featured's progressive preview. */
+export function isFilled(value: string | undefined): boolean {
+  return Boolean(value?.trim());
 }

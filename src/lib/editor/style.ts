@@ -3,6 +3,7 @@ import type {
   Align,
   BlockDefaults,
   CardOverrides,
+  ImagePosition,
   ShadowStyle,
   Size,
   Tactile,
@@ -23,6 +24,7 @@ export const HARD_DEFAULTS = {
   spacing: 50,
   align: "center" as Align,
   size: "large" as Size,
+  imagePosition: "left" as ImagePosition,
 };
 
 export interface ResolvedStyle {
@@ -37,6 +39,7 @@ export interface ResolvedStyle {
   spacing: number;
   align: Align;
   size: Size;
+  imagePosition: ImagePosition;
 }
 
 /** `card.overrides?.x ?? theme.blockDefaults.x` for every style field, per §5.3/§7.3. */
@@ -59,6 +62,7 @@ export function resolveStyle(
     // Block-only — never read from blockDefaults.
     align: o.align ?? HARD_DEFAULTS.align,
     size: o.size ?? HARD_DEFAULTS.size,
+    imagePosition: o.imagePosition ?? HARD_DEFAULTS.imagePosition,
   };
 }
 
@@ -180,3 +184,9 @@ export const SIZE_OPTIONS: { value: Size; label: string }[] = [
   { value: "small", label: "Pequeno" },
   { value: "large", label: "Grande" },
 ];
+
+export const IMAGE_POSITION_OPTIONS: { value: ImagePosition; label: string }[] =
+  [
+    { value: "left", label: "Esquerda" },
+    { value: "right", label: "Direita" },
+  ];

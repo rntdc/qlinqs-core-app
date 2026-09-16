@@ -54,6 +54,8 @@ export function ItemEditPanel({
   }
 
   const fields = containerItemFields(containerType);
+  const contentFields = fields.filter((f) => f !== "link");
+  const hasLinkField = fields.includes("link");
   const imageOk = hasRequiredImage(item);
 
   return (
@@ -72,9 +74,31 @@ export function ItemEditPanel({
         </p>
       ) : null}
 
-      <div className="mb-6">
-        <CardFieldsEditor card={item} fields={fields} onChange={updateCard} />
-      </div>
+      {contentFields.length > 0 ? (
+        <div className="mb-5">
+          <p className="mb-2 text-xs font-semibold tracking-wide text-zinc-400 uppercase">
+            Conteúdo
+          </p>
+          <CardFieldsEditor
+            card={item}
+            fields={contentFields}
+            onChange={updateCard}
+          />
+        </div>
+      ) : null}
+
+      {hasLinkField ? (
+        <div className="mb-6">
+          <p className="mb-2 text-xs font-semibold tracking-wide text-zinc-400 uppercase">
+            Link
+          </p>
+          <CardFieldsEditor
+            card={item}
+            fields={["link"]}
+            onChange={updateCard}
+          />
+        </div>
+      ) : null}
 
       <div className="border-t border-zinc-200 pt-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-400">
@@ -87,6 +111,7 @@ export function ItemEditPanel({
           hideColor
           showAlign={false}
           showSize={false}
+          showImagePosition={false}
           onChangeOverride={changeOverride}
         />
       </div>

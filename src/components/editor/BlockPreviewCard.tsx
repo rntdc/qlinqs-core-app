@@ -1,12 +1,17 @@
 import type { CSSProperties } from "react";
 import type { AtomicBlock, BlockDefaults } from "@/lib/types";
-import { hidesColorOverrides, styleControlsFor } from "@/lib/editor/fields";
+import { hidesColorOverrides, isFilled } from "@/lib/editor/fields";
 import {
   alignToJustify,
   alignToTextAlign,
   buildCardStyle,
   resolveStyle,
 } from "@/lib/editor/style";
+
+/** Fixed width for the "button" link layout — a real button, not a
+ * full-bleed bar: it never stretches to its container or shrinks/grows
+ * with its text. */
+const BUTTON_WIDTH_PX = 220;
 
 /**
  * Renders one block the way it would look on the live page, with the full
@@ -119,93 +124,158 @@ export function BlockPreviewCard({
   }
 
   // type === "link"
-  const controls = styleControlsFor(block.type, block.layout);
 
   if (block.layout === "featured") {
+    // Progressive card: starts as just the image (the preset), and each
+    // field appears only once filled — no empty placeholders. An empty
+    // string counts as not filled.
+    const hasTitle = isFilled(block.card.title);
+    const hasDescription = isFilled(block.card.description);
+    const hasButtonText = isFilled(block.card.buttonText);
+    const hasLink = isFilled(block.card.link?.href);
+    const hasTextArea = hasTitle || hasDescription || hasButtonText;
+
     return (
-      <div data-testid={testId} style={style} className="overflow-hidden">
-        <div className="flex h-24 items-center justify-center bg-accent/10 text-3xl">
+      <div
+        data-testid={testId}
+        style={style}
+        className={`overflow-hidden ${hasLink ? "cursor-pointer" : ""}`}
+      >
+        <div className="relative flex h-24 items-center justify-center bg-accent/10 text-3xl">
+          {block.card.label ? (
+            <span className="absolute top-1 left-1 rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-medium text-on-accent">
+              {block.card.label}
+            </span>
+          ) : null}
           {block.card.image?.value || "🔗"}
         </div>
-        <div className="p-3">
-          <p className="text-sm font-medium">{block.card.title || "Link"}</p>
-          {block.card.description ? (
-            <p className="mt-0.5 text-xs opacity-70">
-              {block.card.description}
-            </p>
-          ) : null}
-          <div
-            style={{
-              borderRadius: Math.max((style.borderRadius as number) - 6, 4),
-            }}
-            className="mt-2 inline-block bg-accent px-3 py-1.5 text-xs font-medium text-on-accent"
-          >
-            {block.card.buttonText || "Ver mais"}
+        {hasTextArea ? (
+          <div className="p-3">
+            {hasTitle ? (
+              <p className="text-sm font-medium">{block.card.title}</p>
+            ) : null}
+            {hasDescription ? (
+              <p className="mt-0.5 text-xs opacity-70">
+                {block.card.description}
+              </p>
+            ) : null}
+            {hasButtonText ? (
+              <div
+                style={{
+                  borderRadius: Math.max((style.borderRadius as number) - 6, 4),
+                }}
+                className="mt-2 inline-block bg-accent px-3 py-1.5 text-xs font-medium text-on-accent"
+              >
+                {block.card.buttonText}
+              </div>
+            ) : null}
           </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (block.layout === "background") {
+    const imageValue = block.card.image?.value;
+    if (!imageValue) {
+      // Graceful no-image fallback: plain surface card with the title,
+      // same treatment as a cardless/plain layout — no broken gradient
+      // over nothing.
+      return (
+        <div
+          data-testid={testId}
+          style={style}
+          className="flex h-28 items-center justify-center p-3 text-center"
+        >
+          <p className="text-sm font-medium">{block.card.title || "Link"}</p>
         </div>
+      );
+    }
+    return (
+      <div
+        data-testid={testId}
+        style={style}
+        className="relative flex h-28 items-end overflow-hidden p-3"
+      >
+        <div className="absolute inset-0 flex items-center justify-center bg-accent/20 text-4xl">
+          {imageValue}
+        </div>
+        {/* Scrim: keeps the overlaid title legible over any image. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <p className="relative text-sm font-semibold text-white">
+          {block.card.title || "Link"}
+        </p>
       </div>
     );
   }
 
   if (block.layout === "thumbnail") {
     const sizeIsLarge = resolved.size === "large";
+    const rowHeight = sizeIsLarge ? "h-20" : "h-16";
+    const reversed = resolved.imagePosition === "right";
     return (
       <div
-        style={
-          controls.align
-            ? {
-                display: "flex",
-                justifyContent: alignToJustify(resolved.align),
-              }
-            : undefined
-        }
+        data-testid={testId}
+        style={style}
+        className={`flex w-full overflow-hidden ${reversed ? "flex-row-reverse" : ""}`}
       >
+        {/* Edge-to-edge image: no padding, full row height, cropped to fit. */}
         <div
-          data-testid={testId}
-          style={style}
-          className={`flex items-center gap-3 p-3 ${controls.align ? "w-fit max-w-full" : "w-full"}`}
+          className={`flex ${rowHeight} w-20 shrink-0 items-center justify-center bg-accent/10 text-2xl`}
         >
-          <span
-            aria-hidden
-            className={`flex shrink-0 items-center justify-center rounded-lg bg-accent/10 ${
-              sizeIsLarge ? "h-10 w-10 text-lg" : "h-8 w-8 text-sm"
-            }`}
-          >
-            {block.card.image?.value || "🔗"}
-          </span>
-          <div className="min-w-0">
-            <p
-              className={`truncate font-medium ${sizeIsLarge ? "text-sm" : "text-xs"}`}
+          {block.card.image?.value || "🔗"}
+        </div>
+        <div
+          className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 p-3"
+          style={{ textAlign: alignToTextAlign(resolved.align) }}
+        >
+          {block.card.label ? (
+            <span
+              className={`w-fit rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-medium text-on-accent ${
+                resolved.align === "right"
+                  ? "self-end"
+                  : resolved.align === "center"
+                    ? "self-center"
+                    : ""
+              }`}
             >
-              {block.card.title || "Link"}
+              {block.card.label}
+            </span>
+          ) : null}
+          <p
+            className={`truncate font-medium ${sizeIsLarge ? "text-sm" : "text-xs"}`}
+          >
+            {block.card.title || "Link"}
+          </p>
+          {block.card.description ? (
+            <p className="truncate text-xs opacity-70">
+              {block.card.description}
             </p>
-            {block.card.description ? (
-              <p className="truncate text-xs opacity-70">
-                {block.card.description}
-              </p>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
     );
   }
 
-  // "button" layout (default) and any unrecognized link layout
+  // "button" layout (default) and any unrecognized link layout: fixed
+  // width, never stretching with its container or its own text.
   return (
     <div
-      data-testid={testId}
       style={{
-        ...style,
-        textAlign: controls.align
-          ? alignToTextAlign(resolved.align)
-          : undefined,
+        display: "flex",
+        justifyContent: alignToJustify(resolved.align),
       }}
-      className="px-4 py-3"
     >
-      <p className="text-sm font-medium">{block.card.title || "Link"}</p>
-      {block.card.description ? (
-        <p className="mt-0.5 text-xs opacity-70">{block.card.description}</p>
-      ) : null}
+      <div
+        data-testid={testId}
+        style={{ ...style, width: BUTTON_WIDTH_PX, maxWidth: "100%" }}
+        className="px-4 py-3 text-center"
+      >
+        <p className="text-sm font-medium">{block.card.title || "Link"}</p>
+        {block.card.description ? (
+          <p className="mt-0.5 text-xs opacity-70">{block.card.description}</p>
+        ) : null}
+      </div>
     </div>
   );
 }
