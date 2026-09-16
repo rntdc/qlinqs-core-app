@@ -160,79 +160,80 @@ export default function EditorPage() {
         </header>
       ) : null}
 
-      <main
-        className={`mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-start ${
-          isEditing ? "lg:pr-[360px]" : ""
-        }`}
-      >
+      <main className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row lg:items-start">
         <BlockPicker
           open={pickerOpen}
           onOpenChange={setPickerOpen}
           onAddPreset={addBlock}
         />
 
-        <div className="order-2 min-w-0 flex-1 lg:order-1 lg:min-w-[280px]">
-          <Canvas
-            blocks={blocks}
-            selectedBlockId={selection?.blockId ?? null}
-            selectedItemId={selection?.itemId ?? null}
-            onSelect={(id) => setSelection({ blockId: id })}
-            onSelectItem={(blockId, itemId) =>
-              setSelection({ blockId, itemId })
-            }
-            onDelete={handleDelete}
-            onDuplicate={handleDuplicate}
-            onReorder={setBlocks}
-            onAddItem={handleAddItem}
-            onDuplicateItem={handleDuplicateItem}
-            onDeleteItem={handleDeleteItem}
-            onReorderItems={handleReorderItems}
-            onPickerOpenChange={setPickerOpen}
-          />
+        {/* Block list + edit panel share this sub-row so the panel opens
+            NEXT TO the list — the preview below is a sibling of this whole
+            group, never displaced by whether a panel is open. */}
+        <div className="order-2 flex min-w-0 flex-1 flex-col gap-6 lg:order-1 lg:min-w-[564px] lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1 lg:min-w-[240px]">
+            <Canvas
+              blocks={blocks}
+              selectedBlockId={selection?.blockId ?? null}
+              selectedItemId={selection?.itemId ?? null}
+              onSelect={(id) => setSelection({ blockId: id })}
+              onSelectItem={(blockId, itemId) =>
+                setSelection({ blockId, itemId })
+              }
+              onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
+              onReorder={setBlocks}
+              onAddItem={handleAddItem}
+              onDuplicateItem={handleDuplicateItem}
+              onDeleteItem={handleDeleteItem}
+              onReorderItems={handleReorderItems}
+              onPickerOpenChange={setPickerOpen}
+            />
+          </div>
+
+          {selectedBlock && selection ? (
+            <div className="lg:w-[300px] lg:shrink-0">
+              {selectedItem && selectedBlock.kind === "container" ? (
+                <ItemEditPanel
+                  item={selectedItem}
+                  containerType={selectedBlock.type}
+                  palette={mockTheme.palette}
+                  blockDefaults={mockTheme.blockDefaults}
+                  onUpdateItem={(card) =>
+                    handleUpdateItem(
+                      selectedBlock.id,
+                      selectedItem.id as string,
+                      card,
+                    )
+                  }
+                  onClose={() => setSelection(null)}
+                />
+              ) : selectedBlock.kind === "container" ? (
+                <ContainerConfigPanel
+                  block={selectedBlock}
+                  onUpdateBlock={handleUpdateBlock}
+                  onClose={() => setSelection(null)}
+                />
+              ) : (
+                <EditPanel
+                  block={selectedBlock as AtomicBlock}
+                  palette={mockTheme.palette}
+                  blockDefaults={mockTheme.blockDefaults}
+                  onUpdateBlock={handleUpdateBlock}
+                  onClose={() => setSelection(null)}
+                />
+              )}
+            </div>
+          ) : null}
         </div>
 
-        <div className="order-1 lg:sticky lg:top-8 lg:order-2 lg:w-[420px] lg:shrink-0">
+        <div className="order-1 lg:sticky lg:top-8 lg:order-2 lg:w-[340px] lg:shrink-0 xl:w-[420px]">
           <PhonePreview
             content={content}
             theme={mockTheme}
             onOpenAddBlockPicker={() => setPickerOpen(true)}
           />
         </div>
-
-        {selectedBlock && selection ? (
-          <div className="order-3">
-            {selectedItem && selectedBlock.kind === "container" ? (
-              <ItemEditPanel
-                item={selectedItem}
-                containerType={selectedBlock.type}
-                palette={mockTheme.palette}
-                blockDefaults={mockTheme.blockDefaults}
-                onUpdateItem={(card) =>
-                  handleUpdateItem(
-                    selectedBlock.id,
-                    selectedItem.id as string,
-                    card,
-                  )
-                }
-                onClose={() => setSelection(null)}
-              />
-            ) : selectedBlock.kind === "container" ? (
-              <ContainerConfigPanel
-                block={selectedBlock}
-                onUpdateBlock={handleUpdateBlock}
-                onClose={() => setSelection(null)}
-              />
-            ) : (
-              <EditPanel
-                block={selectedBlock as AtomicBlock}
-                palette={mockTheme.palette}
-                blockDefaults={mockTheme.blockDefaults}
-                onUpdateBlock={handleUpdateBlock}
-                onClose={() => setSelection(null)}
-              />
-            )}
-          </div>
-        ) : null}
       </main>
     </div>
   );

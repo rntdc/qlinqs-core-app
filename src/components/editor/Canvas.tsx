@@ -72,7 +72,9 @@ export function Canvas({
   return (
     <section
       data-testid="canvas"
-      className="flex min-h-[400px] flex-col rounded-2xl border border-zinc-200 bg-white"
+      className={`flex flex-col rounded-2xl border border-zinc-200 bg-white ${
+        blocks.length === 0 ? "min-h-[180px]" : "min-h-[400px]"
+      }`}
     >
       <div className="border-b border-zinc-200 px-4 py-3">
         <h2 className="text-sm font-semibold text-zinc-900">Blocos</h2>
@@ -84,20 +86,19 @@ export function Canvas({
       {blocks.length === 0 ? (
         <div
           data-testid="canvas-empty-state"
-          className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center"
+          className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-6 text-center"
         >
-          <p className="text-sm font-medium text-zinc-900">
+          <p className="text-xs font-medium text-zinc-900">
             Nenhum bloco ainda
           </p>
-          <p className="max-w-[240px] text-xs text-zinc-500">
-            Comece adicionando um link, um CTA de WhatsApp ou outro bloco à sua
-            página.
+          <p className="max-w-[200px] text-[11px] text-zinc-500">
+            Adicione um link, um CTA de WhatsApp ou outro bloco.
           </p>
           <button
             type="button"
             data-testid="canvas-empty-state-cta"
             onClick={() => onPickerOpenChange(true)}
-            className="mt-1 rounded-full bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+            className="mt-1 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
           >
             Adicionar bloco
           </button>
