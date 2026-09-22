@@ -1,7 +1,7 @@
 // Types for the Qlinqs page data model, aligned to
-// core-app/docs/API-MAPPING.md §5 — the *implemented* shape core-api
+// API-MAPPING.md (project root) §5 — the *implemented* shape core-api
 // validates and accepts today. Where API-MAPPING disagrees with the
-// conceptual data doc (qlinqs-estrutura-de-dados.md), this file follows
+// conceptual data doc (DATA-MODEL.md, project root), this file follows
 // API-MAPPING; see that doc's §4 for the specific differences.
 
 export interface SocialIcon {
@@ -107,7 +107,7 @@ export interface GridConfig {
 
 /**
  * Post-v1 in the conceptual doc, now approved for this build
- * (qlinqs-estrutura-de-dados.md §5.2). A container never contains another
+ * (DATA-MODEL.md §5.2, project root). A container never contains another
  * container (§1.2) — its `items` are plain cards, the model's leaf unit.
  * No `card`/`hidden` of its own: the container is a layout wrapper, each
  * item carries its own style via `overrides` exactly like an atomic card.

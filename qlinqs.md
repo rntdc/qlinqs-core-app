@@ -1,9 +1,11 @@
 # Qlinqs — Project Context
 
-This document explains what the project is and why, without going into
-technical detail (that lives in the `CLAUDE.md` files for each part of
-the codebase). It's the reference for anyone who needs to understand
-the intent behind the decisions.
+This document explains what the project is and why. Read it before
+proposing a feature, scoping work, naming a concept, or writing UI copy —
+it's what keeps a change inside the product's intent instead of merely
+plausible. The last three sections carry what an agent can't infer from
+the code: the shared vocabulary, the decisions we made that no other
+document records, and where every technical answer lives.
 
 ## What it is
 
@@ -55,7 +57,7 @@ The first MVP is scoped and positioned for the Brazilian market
 (PT-BR), where Instagram is a primary channel for exactly this kind of
 audience.
 
-These are people who will actually _look_ at their own page often and
+These are people who will actually *look* at their own page often and
 care about how it looks and how well it represents them — not just
 about "having the links in one place."
 
@@ -81,7 +83,6 @@ half-implemented, and the data structure is already designed to grow
 without needing to be redone later.
 
 **What's in v1:**
-
 - Create an account and claim a link (`qlinqs.com/slug`)
 - Build the page with a set of practical block types covering both
   creator and local-business use cases: links, redirects (social
@@ -95,7 +96,6 @@ without needing to be redone later.
 - See the public page rendered, fast and responsive on mobile
 
 **What's left out for now — and why:**
-
 - **Payment/subscription**: doesn't make sense to charge before there's
   something worth paying for.
 - **Multi-profile**: an advanced-user/agency feature — most early users
@@ -129,3 +129,99 @@ background generator, 3D icons, AI image generation, and the
 reveal-a-hidden-block countdown are examples of "what can be built
 later," once the foundation (simple, well-structured personalization,
 plus the essential blocks and basic analytics) is solid.
+
+## Vocabulary
+
+These words mean one specific thing here. Use them as written, in code,
+in conversation, and in UI copy.
+
+- **Profile** — the public identity: the owner plus the `slug` that routes
+  `qlinqs.com/slug`. One per user in v1.
+- **Page** — the profile's page. Its whole editable state is two
+  documents: **content** (header, social icons, blocks) and **theme**
+  (page styles, block defaults, fonts, palette). One page per profile in
+  v1.
+- **Block** — one entry in the page's flat, ordered list. Either
+  **atomic** (carries exactly one card) or a **container** (carries a
+  list of cards).
+- **Card** — the clickable unit of content: image, title, description,
+  button text, label, link, plus its own style overrides. The same card
+  appears in an atomic block, a carousel and a grid — only how much of
+  it shows changes.
+- **Layout** — for `link` blocks, which face the card wears: `button`,
+  `thumbnail`, `background` or `featured`. The layout decides which card
+  fields render, never which fields the card keeps.
+- **Overrides** — a block's own style values. A missing key means "inherit
+  the theme"; a present key means "this block decides". Rendering is
+  `override ?? theme.blockDefaults ?? hard default`.
+- **Theme** — the page's whole look in one object, including the semantic
+  **palette** (`background`, `text`, `surface`, `onSurface`, `accent`,
+  `onAccent`). Swapping the palette recolors the entire page.
+- **Template** — a curated theme with a name and a preview. Applying one
+  **copies** its theme onto the page.
+- **Label** — the public badge on a card ("NOVO", "PROMO"), visible to
+  visitors. Not a private organization tag; that was cut from v1.
+
+The product is PT-BR. UI copy is written in Portuguese ("Editar página",
+"Adicionar bloco", "Herda do tema", "Falta imagem"), while code, comments
+and docs are in English.
+
+## Rules that constrain every change
+
+These are product rules first. Breaking one is a product bug even when
+the code is correct.
+
+- **Inheritance by absence.** A style field only exists on a block once
+  the user touches it, and resetting it removes the key. This is what
+  makes a theme or template swap recolor everything at once — the
+  product's whole differentiator.
+- **Applying a template copies, never links.** Editing a template later
+  must never change a page that already applied it.
+- **One level of depth.** Containers hold cards. A container never holds
+  another container, and a card never holds children.
+- **A card keeps every field.** Switching layout hides fields, it never
+  discards what the user typed. Switching back brings the text back.
+- **Cut features stay cut, not half-built.** The data already has room
+  for them (see "How the MVP was scoped"), so adding one later is a
+  feature, not a migration.
+
+## Decisions this project made on its own
+
+These started as implementation calls rather than product design, and
+they're what a fresh agent would otherwise re-invent under a different
+name. `DATA-MODEL.md` now records them all; this is the short version.
+
+- **`background` link layout** — the image fills the whole button with
+  the title overlaid. Our fourth layout (DATA-MODEL §5.1).
+- **`imagePosition`** (`left` | `right`) — which side the thumbnail image
+  sits on. Block-only, like `align` and `size`: never a theme default.
+- **A container's items are cards, not blocks.** This is how "containers
+  hold blocks" is implemented, and it's what keeps nesting impossible.
+- **`page.background.type`** — we named the field that holds the
+  background's kind; the product design describes the setting without
+  naming a key for it.
+- **Colors are plain strings** for now; whether they become references to
+  palette roles is still open (DATA-MODEL §9.6).
+- **Layouts are only enumerated for `link` blocks.** The other block
+  types accept any layout name until their own matrix exists
+  (DATA-MODEL §9.8).
+- **No auth yet.** The editing endpoints act on one fixed profile
+  (slug `teste`) until accounts exist. Ownership checks arrive with auth.
+
+## Where the technical answers live
+
+Product intent is here. Everything else has one home — read it there
+rather than restating it:
+
+The first three live at the project root, next to this file; the fourth
+is a skill inside `core-api`:
+
+- **Business rules and the JSON model** (blocks, cards, layouts, theme,
+  what's v1 vs post-v1, what's still open): `DATA-MODEL.md`.
+- **What the API actually implements today** (routes, request and
+  response shapes, validation rules verbatim, and where the
+  implementation departs from the data model): `API-MAPPING.md`. This is
+  the source of truth when the data model disagrees with reality.
+- **Stacks, versions and commands for both halves**: `STACK.md`.
+- **The database as it really is** (columns, types, keys, models,
+  commands): the `qlinqs-database` skill in `core-api/.claude/skills/`.

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Semantic palette roles (qlinqs-estrutura-de-dados.md §7.4). A theme swap
+ * Semantic palette roles (DATA-MODEL.md §7.4, project root). A theme swap
  * only ever changes these six variable values — never the classNames that
  * consume them via the Tailwind utilities registered below.
  */

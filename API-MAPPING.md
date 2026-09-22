@@ -1,17 +1,19 @@
-# Qlinqs Core API — Mapping (as implemented)
+# Qlinqs — API Mapping (as implemented)
 
 This document describes what is **actually implemented** in `core-api` right
-now — the real database schema, the real validation rules, and the real API
-routes — as of the container-blocks validator update on the `staging` branch
-(2026-09-15), built on top of git commit `60608ef`.
-Everything below was cross-checked against the live migrated Postgres
-database, the source code, and the running app's Scramble output
-(`http://localhost:8000/docs/api.json`). Where the running app disagrees with
-`qlinqs-estrutura-de-dados.md` (the conceptual/product doc, copied unchanged
-next to this file), section 4 says so explicitly.
+now: the real database schema, the real validation rules and the real API
+routes. Everything in it was cross-checked against the live migrated Postgres
+database, the source code and the running app's Scramble output
+(`http://localhost:8000/docs/api.json`), and re-verified by QA after the
+container-blocks and link-layout updates on `staging` (core-api commit
+`37c9c80`). Re-check it against the code whenever that drifts.
 
-Build the editor against **this** document, not the conceptual one, for field
-names and shapes. Use the conceptual doc for the _why_.
+Build against **this** document for field names and shapes. `DATA-MODEL.md`
+holds the business rules and the *why*; where the two disagree, section 4 says
+so explicitly and this one describes reality. For the database itself
+(columns, types, keys, models, commands), the `qlinqs-database` skill in
+`core-api/.claude/skills/` is the deeper reference; section 1 below is the
+summary.
 
 ---
 
@@ -282,8 +284,8 @@ computed per block index from the actual payload, not one static rule.
 - Every block needs `id` and `kind` (`"atomic"` or `"container"` — nothing
   else is accepted).
 - An **atomic** block needs `type` (one of the 5 v1 types), `layout` (free
-  string, except `link` blocks which must use `button`/`thumbnail`/
-  `featured`), `hidden` (boolean), and `card` (an object, can be empty).
+  string, except `link` blocks which must use
+  `button`/`thumbnail`/`background`/`featured`), `hidden` (boolean), and `card` (an object, can be empty).
 - A **container** block needs `type` (`carousel` or `grid`), `config` (an
   object — `{size}` for carousel, `{columns}` for grid; sending the other
   type's key is a 422), and `items` (an array of cards, can be empty).
@@ -564,7 +566,7 @@ none of these were changed, per the task boundary:
 
 ---
 
-## 4. Differences vs `qlinqs-estrutura-de-dados.md`
+## 4. Differences vs `DATA-MODEL.md`
 
 Concrete, so the frontend builds against what's real:
 
@@ -591,11 +593,11 @@ Concrete, so the frontend builds against what's real:
   describes the background kind (`none`/`solid`/`gradient`) but doesn't name
   a JSON key for it. The implementation chose `type` as that discriminator
   key. Build against `type`.
-- **Naming choice: `link` block layout `"background"`, and the
-  `imagePosition` override field.** Neither exists in the conceptual doc.
+- **Our own additions: the `link` layout `"background"` and the
+  `imagePosition` override field.** Both started here rather than in the
+  data model, which now documents them (DATA-MODEL §5.1 and §5.3).
   Renato reorganized the `link` block from 3 layouts to 4
-  (`button`/`thumbnail`/`background`/`featured` — §5.1 of the conceptual doc
-  only documents the first 3); `"background"` means the image fills the
+  (`button`/`thumbnail`/`background`/`featured`); `"background"` means the image fills the
   whole button as a background with the title overlaid on top. Separately,
   a new block-only style field `imagePosition` (`"left"`/`"right"`, default
   `"left"`) was added to `overrides`/`blockDefaults` — same conditionality as
@@ -625,9 +627,9 @@ Concrete, so the frontend builds against what's real:
   block regardless of type (matching the example JSON shape in §5.1, which
   shows `layout` on every atomic block), but doesn't define or enforce what
   layout values make sense for `whatsapp`/`maps`/`text`/`heading`. The
-  frontend will need its own convention for those (e.g. reuse `"button"` as
-  a sentinel, or something type-specific) — this is a real open point, not
-  resolved anywhere in code. Container blocks (§5.2) never have `layout` —
+  frontend keeps its own convention for those (see
+  `core-app/src/lib/editor/fields.ts`), and DATA-MODEL §9.8 carries it as an
+  open item — the backend enforces nothing. Container blocks (§5.2) never have `layout` —
   don't send it, and don't expect the validator to require it.
 - **Tactile-vs-border/shadow mutual exclusivity (§5.3) is not enforced by
   the API.** You can send `tactile: "glass"` together with `border`/`shadow`/
@@ -650,10 +652,11 @@ Concrete, so the frontend builds against what's real:
   anywhere. If the editor needs a rich-text field for these two types today,
   that's a decision Renato needs to make — there's no backend field for it
   yet, and adding one is outside this task's scope.
-- **Multi-profile / multi-page restrictions match the doc exactly.**
-  `profiles.user_id` and `pages.profile_id` are both `UNIQUE`, exactly as
-  §4/§7 of the conceptual doc describe for v1 (removable later without a
-  data migration, per that doc).
+- **Multi-profile / multi-page are held back by a UNIQUE constraint.**
+  `profiles.user_id` and `pages.profile_id` are both `UNIQUE`, which is what
+  enforces one profile per user and one page per profile in v1. DATA-MODEL
+  §8 lists both as cut for now; lifting either means dropping a constraint
+  in a migration, with no JSON reshaping.
 - **Asset ownership matches the doc exactly.** `assets.profile_id` (not
   `page_id`) — explicitly for future multi-page reuse, as the conceptual doc
   says, even though no upload endpoint exists yet to exercise it.
@@ -752,7 +755,7 @@ type PageTheme = {
     >; // e.g. {type:"gradient", from, to} — "from"/"to" are our own convention, not enforced
     profilePicture: Record<string, unknown>; // arbitrary object, may be {}
   };
-  blockDefaults: StyleOverrides; // may be {}; never put align/size here
+  blockDefaults: StyleOverrides; // may be {}; never align/size/imagePosition
   fonts: { titleFont?: string; textFont?: string }; // may be {}
   palette: {
     background: string;
